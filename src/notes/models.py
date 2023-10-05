@@ -1,5 +1,8 @@
-from sqlalchemy import DateTime, ForeignKey, Integer, String, event, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from datetime import datetime
+from typing import List
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -7,16 +10,10 @@ class Base(DeclarativeBase):
 
 
 class TimeStampMixin(object):
-    created_at = mapped_column(DateTime, default=func.now(), sort_order=999)
-    updated_at = mapped_column(DateTime, default=func.now(), sort_order=999)
-
-    @staticmethod
-    def _updated_at(mapper, connection, target):
-        target.updated_at = func.now()
-
-    @classmethod
-    async def __declare_last__(cls):
-        event.listen(cls, "before_update", await cls._updated_at)
+    created_at = mapped_column(DateTime, default=datetime.now(), sort_order=999)
+    updated_at = mapped_column(
+        DateTime, default=datetime.now(), onupdate=datetime.now, sort_order=999
+    )
 
 
 class Board(Base, TimeStampMixin):
@@ -24,6 +21,7 @@ class Board(Base, TimeStampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(75))
+    notes: Mapped[List["Note"]] = relationship(back_populates="board")
 
 
 class Note(Base, TimeStampMixin):
@@ -33,5 +31,6 @@ class Note(Base, TimeStampMixin):
     board_id: Mapped[int] = mapped_column(
         ForeignKey("board.id", ondelete="CASCADE"), nullable=True
     )
+    board: Mapped[List["Board"]] = relationship(back_populates="notes")
     text: Mapped[str] = mapped_column(String(250), nullable=False)
     views_count: Mapped[int] = mapped_column(Integer, default=0)
