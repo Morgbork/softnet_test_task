@@ -1,0 +1,40 @@
+version: "3.7"
+
+# Database + Webserver (under http, for testing setup on localhost:80)
+#
+# docker-compose -f docker-compose.dev.yml up -d
+#
+
+services:
+  postgres:
+    restart: unless-stopped
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5435:5432
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  web:
+    depends_on:
+      - postgres
+    restart: "unless-stopped"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DEFAULT_DATABASE_HOSTNAME=postgres
+      - DEFAULT_DATABASE_USER=postgres
+      - DEFAULT_DATABASE_PASSWORD=postgres
+      - DEFAULT_DATABASE_PORT=5432
+    ports:
+      - 8000:8000
+
+volumes:
+  postgres_data:
